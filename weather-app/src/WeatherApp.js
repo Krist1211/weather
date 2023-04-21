@@ -1,5 +1,4 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
+import React, { useState } from 'react';
 
 import styled  from '@emotion/styled';
 import { ReactComponent as CloudyIcon } from './images/cloudy.svg';
@@ -98,26 +97,81 @@ const Redo = styled(RedoIcon)`
 `;
 
 const WeatherApp = () => {
+
+  const [currentWeather, setCurrentWeather] = useState({
+    observationTime: '2019-10-02 22:10:00',
+    locationName: '臺北市',
+    description: '多雲時晴',
+    temperature: 27.5,
+    windSpeed: 0.3,
+    humid: 0.88,
+  });
+
+  const handleClick = () => {
+    fetch(
+      'https://opendata.cwb.gov.tw/api/v1/rest/datastore/O-A0003-001?Authorization=CWB-1EE18F52-CEEE-4E31-9B60-4DCBEC8C9AF3&locationName=臺中'
+    )
+      .then((response) => response.json())
+      .then((data) => {
+        console.log('data', data);
+        const locationData = data.records.location[0];
+        
+        let TEMP = null
+        let WDSD = null
+        let HUMD = null
+        let Weather = null
+
+        for (let i = 0; i < locationData.weatherElement.length; i++) {
+          if (locationData.weatherElement[i].elementName === 'TEMP') {
+            TEMP = locationData.weatherElement[i].elementValue;
+          }
+          if (locationData.weatherElement[i].elementName === 'WDSD') {
+            WDSD = locationData.weatherElement[i].elementValue;
+          }
+          if (locationData.weatherElement[i].elementName === 'HUMD') {
+            HUMD = locationData.weatherElement[i].elementValue;
+          }
+          if (locationData.weatherElement[i].elementName === 'Weather') {
+            Weather = locationData.weatherElement[i].elementValue;
+          }
+        }
+        // STEP 3：要使用到 React 組件中的資料
+        setCurrentWeather({
+          observationTime: locationData.time.obsTime,
+          locationName: locationData.locationName,
+          description: Weather,
+          temperature: TEMP,
+          windSpeed: WDSD,
+          humid: HUMD,
+        });
+        
+      });
+  };
+
   return (
     <Container>
       <WeatherCard>
-        <Location>台北市</Location>
-        <Description>多雲時晴</Description>
+        <Location>{currentWeather.locationName}</Location>
+        <Description>
+          {currentWeather.observationTime}
+          {' '}
+          {currentWeather.description}
+          </Description>
         <CurrentWeather>
           <Temperature>
-            23 <Celsius>°C</Celsius>
+          {currentWeather.temperature} <Celsius>°C</Celsius>
           </Temperature>
           <Cloudy />
         </CurrentWeather>
         <AirFlow>
           <AirFlowIcon />
-          23 m/h
+          {currentWeather.windSpeed}m/h
         </AirFlow>
         <Rain>
           <RainIcon />
-          48%
+          {currentWeather.humid * 100}%
         </Rain>
-        <Redo />
+        <Redo onClick={handleClick} />
       </WeatherCard>
     </Container>
   );
